@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<body>
+<meta charset="UTF-8" />
+<script src="https://cdn.jsdelivr.net/npm/phaser@3.15.1/dist/phaser.min.js"></script>
+<script src="messageBox.js"></script>
+<script src="selectBox.js"></script>
+<script src="localforage.js"></script>
+<script>
+class titleScene extends Phaser.Scene {
+constructor() {
+super({ key: "titleScene", active: true });
+}
+preload(){
+  this.load.image("bg001", "./quiz_bg.png");
+}
+create() {
+bg001 = this.add.tileSprite(400, 300, 800 , 600, "bg001");
+let text = this.add.text(100, 100, "  QUIZ Game1").setFontSize(64).setColor("#ff0");
+let clickButton = this.add.text(200, 300, "START TO CLICK", {fill: "#0f0"});
+clickButton.setStroke("#0000ff", 4);
+clickButton.setFontSize("40px");
+
+let txtHiScore = this.add
+.text(300, 400, "Hi-Score :")
+.setFontSize("32px")
+.setStroke("#000000",4)
+.setColor("#ffffff");
+localforage.getItem("hiscore", function (err, value) {
+var score1 = 0;
+if (value != null) {
+score1 = value;
+}
+hiScore = score1;
+txtHiScore.text = "Hi-Score :" + score1;
+});
+
+
+clickButton.setInteractive();
+clickButton.on("pointerdown", () => {
+this.scene.start("MyScene1");
+});
+}
+}
+class MyScene1 extends Phaser.Scene {
+constructor() {
+super({ key: "MyScene1", active: false });
+}
+preload() {   
+this.load.image("bg001", "./quiz_bg.png");
+this.load.spritesheet('target', './my.png', {
+	frameWidth: 250,
+	frameHeight: 400
+});
+this.load.audio("se_ng", "ng_oto.mp3");
+this.load.audio("se_ok", "ok_oto.mp3");
+this.load.audio("bgm001", "casino.mp3");
+}
+create() {
+bg001 = this.add.tileSprite(400, 300, 800 , 600, "bg001");
+myChara = this.add.sprite( 600,400, 'target' );
+msgBox = new messageBox(this);
+dialogBox = new selectBox(this, 400,200,600,300);
+mondaiCount = 0;
+messageMode = false;
+
+seNG = this.sound.add("se_ng");
+seOK  = this.sound.add("se_ok");
+bgm = this.sound.add("bgm001", { loop: true });
+bgm.play();
+}
+
+update() {
+  if(mondaiCount >=0 && messageMode == false){
+    console.log("sss");
+    messageMode = true;
+    msgBox.show("司会者", mondai[mondaiCount]["mondai"]);
+    dialogBox.show(mondai[mondaiCount]["ansList"],function(clickAns){
+      if(mondai[mondaiCount]["answer"] === clickAns){
+        console.log("正解!");
+        seOK.play();
+        myChara.setFrame(1);
+        seikaiCnt = seikaiCnt + 1;
+      } else {
+        console.log("不正解..");
+        myChara.setFrame(2);
+        seNG.play();
+      }
+      dialogBox.hide();
+      mondaiCount = mondaiCount + 1;
+      messageMode = false;
+
+      console.log(messageMode);
+      if(mondaiCount >= mondai.length ){
+        var rate = Math.round((seikaiCnt / mondai.length) * 100);
+        if(hiScore <= rate){
+          hiScore = rate;
+          localforage.setItem("hiscore", hiScore);
+          msgBox.show("司会者", "正答率は" + rate  + "%でスコア更新です!");
+          myChara.setFrame(1);
+        } else {
+          msgBox.show("司会者", "正答率は" + rate  + "%でハイスコアならずー。。");
+          myChara.setFrame(2);
+        }
+      }
+
+
+    });
+  }
+
+}
+
+}
+var config = {
+type: Phaser.AUTO,
+width: 800, height: 600,
+backgroundColor: "#4488aa",
+audio: { disableWebAudio: true },
+scene: [titleScene, MyScene1]
+};
+var mondai=[
+  {
+    "mondai":"パンはパンでも食べられないパンは？",
+    "ansList":["アンパンマン", "フライパン", "かびパン"],
+    "answer":"フライパン"
+  },
+  {
+    "mondai":"エビとイカとカメ、緑色なのはどれ？",
+    "ansList":["エビ", "イカ", "カメ"],
+    "answer":"カメ"
+  },
+  {
+    "mondai":"ゲーム「マインクラフト」のラスボスは？",
+    "ansList":["ウィザー", "ゾーマ", "エンドラ"],
+    "answer":"エンドラ"
+  } ,
+  {
+    "mondai":"マンガ「ドラゴンボール」で願いをかなえる龍の名前は？",
+    "ansList":["ウーロン", "シェンロン", "炎竜王"],
+    "answer":"シェンロン"
+  } ,
+  {
+    "mondai":"うるう年ではない１年は何日？",
+    "ansList":["３６５日", "３６６日", "１４日"],
+    "answer":"３６５日"
+  } ,
+  {
+    "mondai":"ゲーム「マインクラフト」で\r\nアイアンゴーレムがドロップするアイテムは？",
+    "ansList":["鉄ピッケル", "鉄インゴット", "ボビー"],
+    "answer":"鉄インゴット"
+  } ,
+  ];
+var msgBox, dialogBox;
+var game = new Phaser.Game(config);
+var bg001, myChara, seOK, seNG,bgm;
+var txtMessage;
+var messageMode = false;//0:None, 1:回答待ち
+var mondaiCount = -1, seikaiCnt = 0, hiScore = 0;
+
+</script>
+</body>
+</html>
